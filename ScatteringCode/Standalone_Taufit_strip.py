@@ -464,7 +464,7 @@ for j in range(npch):
     plt.rc('font', family='serif')
     plt.plot(profilexaxis,data_highsnr[j],'y',alpha = 0.25)
     plt.plot(profilexaxis,model_highsnr[j],prof, alpha = 0.7)
-    plt.title('%s at %.1f MHz' %(pulsars, freqMHz_highsnr[j]))
+    plt.title('%s at %.1f MHz' %(pulsars[j], freqMHz_highsnr[j]))
     plt.annotate(r'$\tau: %.4f \pm %.2e$ sec' %(taus_highsnr[j]*pulseperiod/nbins, lmfitstds_highsnr[j]*pulseperiod/nbins),xy=(np.max(profilexaxis),np.max(data_highsnr[j])),xycoords='data',xytext=(0.4,textpos),textcoords='axes fraction',fontsize=12)
     plt.ylim(ymax=1.1*np.max(data_highsnr[j]))
     plt.xlim(xmax=pulseperiod)
@@ -522,20 +522,12 @@ specdata_err_highsnr = powouttau_highsnr.params['exponent'].stderr
 
 spec_amp = powouttau_highsnr.best_values['amplitude']
 
-
-tau_HBAtop = spec_amp*np.power(freqms_highsnr[-1],-specfitdata_highsnr)
-tau_1GHz = psr.tauatfreq(freqms_highsnr[-1],tau_HBAtop,1.0,specfitdata_highsnr)
-tau_100MHz = psr.tauatfreq(freqms_highsnr[-1],tau_HBAtop,0.1,specfitdata_highsnr)
-
 print9 =""
 print10 = 'alpha (from high SNR, low tau err) = %.4f' %specfitdata_highsnr
 print11 = 'pulseperiod = %.6f' %pulseperiod
 
 for k in range(9,12):
     print eval('print{0}'.format(k))
-
-print "tau_1GHz = %.8f sec" %tau_1GHz
-print "tau_100MHz = %.8f sec" %tau_100MHz
     
 ##PLOT TAU##  
     
@@ -690,7 +682,7 @@ plt.ylabel(r'$DC$',fontsize=16)
 
 for i in range(numfig6):
     k = numfig6 - i ##reverse the order
-    Summaryplot = '%s_%s_%s_%d.png'  % (pulsar,datac,meth,1)
+    Summaryplot = '%s_%s_%s_%d.png'  % (pulsar,datac,meth,k)
     picpathtau = newpath
     fileoutputtau = os.path.join(picpathtau,Summaryplot)
     plt.savefig(fileoutputtau, dpi=150)
