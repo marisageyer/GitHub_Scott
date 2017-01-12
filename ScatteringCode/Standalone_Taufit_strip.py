@@ -37,8 +37,6 @@ parser.add_argument('-p','--period',type=float,
                     help="Provide the period of the pulsar in seconds")
 parser.add_argument('-c','--counts',type=int,
                     help="Provide the number of noise realisations (interger)")
-parser.add_argument('-s','--simulate',
-                    help="Choosing this option leads to simulated data. For broadening function: choose between 'onedim', 'iso', 'aniso'.")                    
 parser.add_argument('-m','--method',
                     help="Choosing method to fit data or simulation. Choose between 'onedim', 'iso', 'aniso','postfold', 'isoplusonedim'")                   
 parser.add_argument('-dc','--datacycle',
@@ -51,7 +49,6 @@ args = parser.parse_args()
 filepath = args.filename
 pulseperiod = args.period
 count = args.counts
-simu = args.simulate
 meth = args.method
 datac = args.datacycle
 
@@ -60,115 +57,20 @@ newpath = r'./SummaryPlots'
 if not os.path.exists(newpath):
     os.makedirs(newpath)
 
-if simu is None:
-       
-        print "\n Reading in data \n"
-        pulsars = []
-        pulsar, nch, nbins,nsub, lm_rms = dri.read_headerfull(filepath)
-        pulsars = [pulsar for i in range(nch)]
-        print3 = "RMS: %f" %lm_rms
-         
-        print0 = "Pulsar name: %s" %pulsar
-        print1 = "Number of channels: %d" %nch
-        print2 = "Number of bins: %d" %nbins
-    
-        for k in range(4):
-            print eval('print{0}'.format(k))
-    
-else:
-    print "\n Simulating data \n"
-    print(" \n 1. The %s broadening function" %simu)
-    if simu in ('iso','ISO', 'Iso', 'onedim','1D','Onedim', 'postfold', 'pf', 'Postfold', 'POSTFOLD'):
-        while True:
-            try:
-                taudivP = raw_input("Express max. tau as a fraction of the pulseperiod: ")
-                taudivP = float(taudivP)
-            except ValueError:
-                print("Try again. Enter an int or float.")
-                continue
-            else:
-                break
-    else:
-        while True:
-            try:
-                taudivP1 = raw_input("Express max. tau1 as a fraction of the pulseperiod: ")
-                taudivP1 = float(taudivP1)
-                taudivP2 = raw_input("Express max. tau2 as a fraction of the pulseperiod: ")
-                taudivP2 = float(taudivP2)
-                taudivP = np.array([taudivP1, taudivP2])
-            except ValueError:
-                print("Try again. Enter an int or float.")
-                continue
-            else:
-                break
-    print(" \n 2. The simulated pulsar")
-    if pulseperiod is None:  
-        while True:
-            try:
-                pulseperiod = raw_input("Express pulse period in seconds: ")
-                pulseperiod = float(pulseperiod)
-            except ValueError:
-                print("Try again. Enter an int or float.")
-                continue
-            else:
-                break  
-    while True:
-        try:
-            dutycycle = raw_input("Express duty cycle as a percentage of pulse period, %s sec: " %pulseperiod)
-            dutycycle = float(dutycycle)
-        except ValueError:
-            print("Try again. Enter an int or float.")
-            continue
-        else:
-            break
-    print(" \n 3. Data and observing properties")
-    while True:
-        try:
-            freqlow, freqhigh, incr = raw_input("Choose a lowest and highest frequency and increment (MHz), e.g 50 120 5: ").split()
-            freqlow, freqhigh, incr = float(freqlow), float(freqhigh), float(incr)
-        except ValueError:
-            print("Try again. Separate 3 floats with a space.")
-            continue
-        else:
-            break
 
-    while True:
-        try:            
-#            nbins = raw_input("Choose number of bins per pulse period: ")
-#            nbins = int(nbins)
-            snr = raw_input("Choose peak SNR: ")
-            snr = int(snr)
-        except ValueError:
-            print("Try again. Enter an int or float.")
-            continue
-        else:
-            break
+print "\n Reading in data \n"
+pulsars = []
+pulsar, nch, nbins,nsub, lm_rms = dri.read_headerfull(filepath)
+pulsars = [pulsar for i in range(nsub)]
+print3 = "RMS: %f" %lm_rms
+ 
+print0 = "Pulsar name: %s" %pulsar
+print1 = "Number of channels: %d" %nch
+print2 = "Number of bins: %d" %nbins
+
+for k in range(4):
+    print eval('print{0}'.format(k))
     
-    nbins = 512
-    freqsimu = np.arange(freqlow,freqhigh+incr,incr)
-    nch = len(freqsimu)
-    propconst = taudivP*pulseperiod*(freqlow/1000.)**4
-    propconst = np.array([propconst])
-    
-    tausecs = []
-    for i in range(len(propconst)):
-        tausec = propconst[i]*(freqsimu/1000.)**(-4)
-        tausecs.append(tausec)
-    tausecs = np.array(tausecs).transpose()
-    
-    pulsars = []
-    for i in range(nch):
-        if simu in ('aniso','Aniso','ANISO'):
-            pulsar = r'Simul.: $\tau_1 = %.2f$, $\tau_2 = %.2f$ ' %(tausecs[i][0],tausecs[i][1])
-            pulsars.append(pulsar)
-        else:
-            pulsar = r'Simul: $\tau_1 = %.2f$' %tausecs[i]
-            pulsars.append(pulsar)
-    pulsar = 'Simulated'
-    print0 = "Pulsar : %s" %pulsar
-    print1 = "Number of channels: %d" %nch
-    print2 = "Number of bins: %d" %nbins
-    print3 = ""
 
 #Find pulseperiod from list if it wasn't parsed
 
@@ -219,24 +121,14 @@ datas = []
 
 halfway = nbins/2.
 
-if nsub != 1:
-    nch = nsub
-else:
-    nch = nch
 
-
-for i in range(nch):
-    if simu is None:
-            data, freqm = dri.read_data(filepath,i,nbins)
-            freqmsMHz.append(freqm) 
-            peakbin = np.argmax(data)
-            shift = int(halfway)-int(peakbin)
-            data = np.roll(data,shift)
-            print "I'm rolling the data to ensure peak is in the middle"
-    else:
-        freqmsMHz = freqsimu
-        freqGHz = freqmsMHz/1000.
-        data = psr.simulate(pulseperiod,tausecs[i],dutycycle,-1.6,freqGHz[i],freqlow/1000.,nbins,snr,simu)
+for i in range(nsub):
+    data, freqm = dri.read_data(filepath,i,nbins)
+    freqmsMHz.append(freqm) 
+    peakbin = np.argmax(data)
+    shift = int(halfway)-int(peakbin)
+    data = np.roll(data,shift)
+    print "I'm rolling the data to ensure peak is in the middle"
     comp_rms = psr.find_rms(data,nbins)
    
     if meth is None:
@@ -290,9 +182,7 @@ for i in range(nch):
     print 'SNR (from model): %.2f' % comp_SNR_model
     comp_SNR =  psr.find_peaksnr_smooth(data,comp_rms)
     print 'SNR (from data): %.2f' % comp_SNR
-#    print "The SNR is computed using data only, not model"
-#    print "The SNR is computed using model"
-    
+
     obtainedtaus.append(besttau)    
     lmfittausstds.append(taustd)
     bestparamsall.append(bestparams)
@@ -307,73 +197,21 @@ for i in range(nch):
     comp_SNRs.append(comp_SNR)
     datas.append(data)
 
-"""Considering the generated BW, calculate the monochromatic frequency that should be associated with the tau-fits"""
-"""Replace freqmsMHz with this frequency"""
-#for now I'm only using an average bandwidth for all observations. Considering changing it from freq to freq.
 
-"""Fix SNR cutoffs, include couple of specific ones for individual pulsars"""
-	
-SNRcutoff = 0.0
-tauerrorcutoff = 5000.0
-
-print 'Change observing frequencies + BW to an associated monochromatic frequency'
-
-originalfreq = freqmsMHz 
-
-bandwidthMHz = 2*(freqmsMHz[-1]-freqmsMHz[0])/(nch-1)
-freqMonoMHzs = []
-for i in range(nch):
-    freqMonoMHz = psr.make_mono(freqmsMHz[i],bandwidthMHz)
-    freqMonoMHzs.append(freqMonoMHz)
-freqmsMHz = freqMonoMHzs
-
-"""Delete profiles with 
-
-1. inadequate SNR values,
-2. too large tau error values
-3. tau error == 0, i.e. not a fit
-
-update other arrays accordingly"""
-
-print4 = "SNR cutoff: %.2f" % SNRcutoff
-print5 = "Tau perc error cutoff: %.2f" % (100*tauerrorcutoff)
-
-for k in range(0,6):
+for k in range(0,4):
     print eval('print{0}'.format(k))
-           
-ind_lowSNR = np.where(np.array(comp_SNRs) < SNRcutoff)
-ind_tauerr = np.where(np.array(lmfittausstds)/np.array(obtainedtaus) > tauerrorcutoff)
-ind_tauerr2 = np.where(np.array(lmfittausstds)==0)
-ind_tauERRs = np.hstack((ind_tauerr,ind_tauerr2))
-ind_uniq = np.unique(np.hstack((ind_lowSNR,ind_tauerr,ind_tauerr2)))
-data_highsnr = np.delete(np.array(datas),ind_uniq,0)
-model_highsnr = np.delete(np.array(noiselessmodels),ind_uniq,0)
+            
 
-""""""
+data_highsnr = datas
+freqms_highsnr = np.array(freqmsMHz)/1000.
+freqMHz_highsnr = freqmsMHz
+taus_highsnr = obtainedtaus
+lmfitstds_highsnr = np.array(lmfittausstds)
+model_highsnr = noiselessmodels
+fluxes_highsnr = comp_fluxes
+rms_highsnr = comp_rmss
+redchis_highsnr = redchis
 
-taus_highsnr = np.delete(np.array(obtainedtaus),ind_uniq)
-lmfitstds_highsnr = np.delete(np.array(lmfittausstds),ind_uniq)
-
-
-freqMHz_highsnr = np.delete(np.array(freqmsMHz),ind_uniq)
-freqms_highsnr = np.array(freqMHz_highsnr)/1000.
-fluxes_highsnr = np.delete(np.array(comp_fluxes),ind_uniq)
-rms_highsnr = np.delete(np.array(comp_rmss),ind_uniq)
-redchis_highsnr = np.delete(np.array(redchis),ind_uniq)
- 
-
-#data_highsnr = datas
-#freqms_highsnr = np.array(freqmsMHz)/1000.
-#freqMHz_highsnr = freqmsMHz
-#taus_highsnr = obtainedtaus
-#lmfitstds_highsnr = np.array(lmfittausstds)
-#model_highsnr = noiselessmodels
-#fluxes_highsnr = comp_fluxes
-#rms_highsnr = comp_rmss
-#redchis_highsnr = redchis
-
-number_of_plotted_channels = len(data_highsnr)
-npch = number_of_plotted_channels
 
 """Array with all the other fitting parameters: sigma, A, etc."""
 bestpT = np.transpose(bestparamsall)
@@ -382,42 +220,15 @@ bestpT_std = np.transpose(bestparams_stdall)
 bestpT_highSNR = bestpT
 bestpT_std_highSNR = bestpT_std
 
-print6 = "Number of plotted channels: %d/%d" %(npch, nch)
-print7 = "Number of channels dropped for low SNR: %d" %np.shape(ind_lowSNR)[1]
-print8 = "Number of channels dropped for high tau error: %d" %np.shape(ind_tauERRs)[1]
+print6 = "Number of plots %d" %(nsub)
+npch = nsub
 
-for k in range(6,9):
-        print eval('print{0}'.format(k))
-
-"""Similarly reduce array to only the used data (i.e. lowSNR and hightauerr removed)"""
-bestpT_highSNR = np.zeros([len(bestpT),npch])
-bestpT_std_highSNR = np.zeros([len(bestpT),npch])
-
-for i in range(len(bestpT)):
-    bestpT_highSNR[i]= np.delete(bestpT[i],ind_uniq)
-    bestpT_std_highSNR[i]= np.delete(bestpT_std[i],ind_uniq)
+print eval('print{0}'.format(6))
 
 """Calculate fits for parameters sigma and mu"""
 """Shift data based on mu-trend (DM trend?)"""
 
 pbs = pulseperiod/nbins
-
-
-"""Fit models to sigma"""
-powmod = PowerLawModel()
-powpars = powmod.guess(bestpT_highSNR[0], x=freqms_highsnr)
-powout = powmod.fit(bestpT_highSNR[0], powpars, x=freqms_highsnr, weights=1/((bestpT_std_highSNR[0])**2))
-
-linmod = LinearModel()
-
-quadmod = QuadraticModel()
-quadpars = quadmod.guess(bestpT_highSNR[0], x=freqms_highsnr)
-quadout  = quadmod.fit(bestpT_highSNR[0], quadpars, x=freqms_highsnr, weights=1/((bestpT_std_highSNR[0])**2))
-
-expmod = ExponentialModel()
-exppars = expmod.guess(bestpT_highSNR[0], x=freqms_highsnr)
-expout = expmod.fit(bestpT_highSNR[0], exppars, x=freqms_highsnr, weights=1/((bestpT_std_highSNR[0])**2))
-
     
 """Plotting starts"""
 
@@ -443,11 +254,11 @@ else:
     
 ##PLOT PROFILES##
 
-totFig = (npch+5)/sp + 1
+totFig = (nsub+5)/sp + 1
 
 
 profiles = []
-for j in range(npch):
+for j in range(nsub):
     if j+1 == sp:
         numFig = (j+1)/sp
         subplotcount = sp
@@ -513,21 +324,9 @@ taus_highsnr = np.array(taus_highsnr)
 taussec_highsnr = taus_highsnr*pulseperiod/nbins
 
 
-powmod = PowerLawModel()
-powparstau_highsnr = powmod.guess(taussec_highsnr,x=freqms_highsnr)
-powouttau_highsnr = powmod.fit(taussec_highsnr,powparstau_highsnr, x=freqms_highsnr,weights=1/(lmfitstdssec_highsnr**2))
+print9 = 'pulseperiod = %.6f' %pulseperiod
 
-specfitdata_highsnr = -powouttau_highsnr.best_values['exponent']
-specdata_err_highsnr = powouttau_highsnr.params['exponent'].stderr
-
-spec_amp = powouttau_highsnr.best_values['amplitude']
-
-print9 =""
-print10 = 'alpha (from high SNR, low tau err) = %.4f' %specfitdata_highsnr
-print11 = 'pulseperiod = %.6f' %pulseperiod
-
-for k in range(9,12):
-    print eval('print{0}'.format(k))
+print eval('print{0}'.format(9))
     
 ##PLOT TAU##  
     
@@ -546,6 +345,8 @@ plt.subplot(3,4,subpl_ind2)
 #plt.errorbar(xaxis,taussec_highsnr,yerr=lmfitstds_highsnr*pulseperiod/nbins,fmt=markr,markersize=9.0,capthick=2,linewidth=1.5, alpha = alfval)
 plt.plot(xaxis,taussec_highsnr,markr,markersize=9.0,linewidth=1.5, alpha = alfval)
 #plt.plot(1000.*freqms_highsnr, powouttau_highsnr.best_fit, 'k-', alpha=alfval)
+plt.plot(xaxis,fluxes_highsnr,markr, alpha = alfval)
+plt.title('%s' %(pulsar))
 plt.xticks(fontsize=12)
 plt.yticks(fontsize=12)
 plt.xlabel('Tsubs (count)',fontsize=16)
@@ -595,9 +396,6 @@ print "Mean reduced Chi square: %.2f" %  np.mean(redchis_highsnr/np.power(rms_hi
 
 
 
-powparstau_highsnr = powmod.guess(taussec_highsnr,x=freqms_highsnr)
-powouttau_highsnr = powmod.fit(taussec_highsnr,powparstau_highsnr, x=freqms_highsnr,weights=1/(lmfitstdssec_highsnr**2))
-
 
 ##PLOT SIGMA##  #
 
@@ -617,8 +415,6 @@ figg.subplots_adjust(left = 0.055, right = 0.98, wspace=0.35,hspace=0.35,bottom=
 plt.subplot(3,4,subpl_ind4)
 plt.plot(xaxis,bestpT_highSNR[0]*pbs,'m*',markersize=9.0,linewidth=1.5,alpha=alfval)
 #plt.errorbar(xaxis,bestpT_highSNR[0]*pbs,yerr = bestpT_std_highSNR[0]*pbs, fmt = 'm*',markersize=9.0,capthick=2,linewidth=1.5,alpha=alfval)
-plt.plot(xaxis,powout.best_fit*pbs,'b-', alpha=alfval,label='pow = %.2f' %powout.best_values['exponent'])
-plt.plot(xaxis,quadout.best_fit*pbs,'c-',alpha=alfval, label='a,b = %.2f,%.2f' %(quadout.best_values['a'],quadout.best_values['b']))
 plt.ylabel(r'$\sigma$ (sec)')
 plt.yticks(fontsize=11)
 plt.xticks(fontsize=10)
@@ -651,37 +447,9 @@ plt.xlabel('Tsubs (count)',fontsize=16)
 plt.ylabel(r'$A$',fontsize=16)
 
 
-## PLOT DC ##
 
-
-if subpl_ind5 >= sp:
-    subpl_ind6 = int(subpl_ind5-sp)+1
-else:
-    subpl_ind6 = int(subpl_ind5)+1
-
-if npch + 6 == sp:    
-    numfig6 = (npch+6)/sp
-elif npch + 6 == 2*sp:
-    numfig6 = (npch+6)/sp
-else:
-    numfig6 = (npch+6)/sp + 1
-
-
-plt.figure(numfig6, figsize=(16,10))
-plt.subplot(3,4,subpl_ind6)
-#plt.errorbar(xaxis, bestpT_highSNR[3], yerr = bestpT_std_highSNR[3], fmt = 'k*',markersize=9.0,capthick=2,linewidth=1.5,alpha=alfval)
-plt.plot(xaxis, bestpT_highSNR[3],'k*',markersize=9.0,linewidth=1.5,alpha=alfval)
-plt.title('DC offset')
-plt.annotate('%s' %pulsar,xy=(np.max(1000*freqms),np.max(bestpT_highSNR[3])),xycoords='data',xytext=(0.5,0.7),textcoords='axes fraction',fontsize=14)
-plt.yticks(fontsize=12)
-plt.xticks(fontsize=12)
-plt.xlabel('Tsubs (count)',fontsize=16)
-#plt.tight_layout()
-plt.ylabel(r'$DC$',fontsize=16)
-
-
-for i in range(numfig6):
-    k = numfig6 - i ##reverse the order
+for i in range(numfig5):
+    k = numfig5 - i ##reverse the order
     Summaryplot = '%s_%s_%s_%d.png'  % (pulsar,datac,meth,k)
     picpathtau = newpath
     fileoutputtau = os.path.join(picpathtau,Summaryplot)
