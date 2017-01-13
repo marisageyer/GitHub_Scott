@@ -202,15 +202,15 @@ for k in range(0,4):
     print eval('print{0}'.format(k))
             
 
-data_highsnr = datas
-freqms_highsnr = np.array(freqmsMHz)/1000.
-freqMHz_highsnr = freqmsMHz
-taus_highsnr = obtainedtaus
-lmfitstds_highsnr = np.array(lmfittausstds)
-model_highsnr = noiselessmodels
-fluxes_highsnr = comp_fluxes
-rms_highsnr = comp_rmss
-redchis_highsnr = redchis
+data_highsnr = datas[0]
+freqms_highsnr = np.array(freqmsMHz[0])/1000.
+freqMHz_highsnr = freqmsMHz[0]
+taus_highsnr = obtainedtaus[0]
+lmfitstds_highsnr = np.array(lmfittausstds)[0]
+model_highsnr = noiselessmodels[0]
+fluxes_highsnr = comp_fluxes[0]
+rms_highsnr = comp_rmss[0]
+redchis_highsnr = redchis[0]
 
 
 """Array with all the other fitting parameters: sigma, A, etc."""
@@ -242,61 +242,81 @@ textpos2 = 5
     
 ##PLOT PROFILES##
 
-totFig = (nsub+5)/sp + 1
-
+numFig = 1
 
 profiles = []
-for j in range(nsub):
-    if j+1 == sp:
-        numFig = (j+1)/sp
-        subplotcount = sp
-    else: 
-        numFig = (j+1)/sp + 1
-        if j+1 < sp:
-            subplotcount = j+1
-        else: 
-            subplotcount = j+1 - sp
-    figg = plt.figure(numFig,figsize=(16,10))
-    figg.subplots_adjust(left = 0.055, right = 0.98, wspace=0.35,hspace=0.35,bottom=0.05)    
-    plt.subplot(3,4,subplotcount)
-    plt.rc('text', usetex=True)
-    plt.rc('font', family='serif')
-    plt.plot(profilexaxis,data_highsnr[j],'y',alpha = 0.25)
-    plt.plot(profilexaxis,model_highsnr[j],prof, alpha = 0.7)
-    plt.title('%s at %.1f MHz' %(pulsars[j], freqMHz_highsnr[j]))
-    plt.annotate(r'$\tau: %.4f \pm %.2e$ sec' %(taus_highsnr[j]*pulseperiod/nbins, lmfitstds_highsnr[j]*pulseperiod/nbins),xy=(np.max(profilexaxis),np.max(data_highsnr[j])),xycoords='data',xytext=(0.4,textpos),textcoords='axes fraction',fontsize=12)
-    plt.ylim(ymax=1.1*np.max(data_highsnr[j]))
-    plt.xlim(xmax=pulseperiod)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.xlabel('time (s)')
-    plt.ylabel('normalized intensity')
-        
-
-if npch >= sp:
-    subpl_ind = int(npch-sp) +1
-else:
-    subpl_ind = int(npch) + 1
-
-if npch + 1 == sp:
-    numfig = (npch+1)/sp
-else:
-    numfig = (npch+1)/sp + 1
-
-##PLOT FLUX##
-
-xaxis = np.linspace(1,npch,npch)
-
-plt.figure(numfig, figsize=(16,10))
-plt.subplot(3,4,subpl_ind)
+subplotcount = 1
+figg = plt.figure(numFig,figsize=(16,10))
+figg.subplots_adjust(left = 0.055, right = 0.98, wspace=0.35,hspace=0.35,bottom=0.05)    
+plt.subplot(2,2,subplotcount)
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
-plt.plot(xaxis,fluxes_highsnr,markr, alpha = alfval)
-plt.title('%s' %(pulsar))
+plt.plot(profilexaxis,data_highsnr,'y',alpha = 0.25)
+plt.plot(profilexaxis,model_highsnr,prof, alpha = 0.7)
+plt.title('%s at %.1f MHz' %(pulsar, freqMHz_highsnr))
+plt.annotate(r'$\tau: %.4f \pm %.2e$ ms' %(taus_highsnr*pulseperiod/nbins*1000, lmfitstds_highsnr*pulseperiod/nbins*1000),xy=(np.max(profilexaxis),np.max(data_highsnr)),xycoords='data',xytext=(0.4,textpos),textcoords='axes fraction',fontsize=14)
+plt.ylim(ymax=1.3*np.max(data_highsnr))
+plt.xlim(xmax=pulseperiod)
 plt.xticks(fontsize=12)
 plt.yticks(fontsize=12)
-plt.xlabel('Tsubs (count)',fontsize=16)
-plt.ylabel(r'Calibrated flux (mJy)',fontsize=16)
+plt.xlabel('time (s)')
+plt.ylabel('normalized intensity',fontsize=14)
+        
+
+"""Compute the KS Test D value and probability of the residuals following a normal distribution"""
+
+resdata = data_highsnr - model_highsnr
+resnormed = (resdata-resdata.mean())/resdata.std()
+KSd, KSp = stats.kstest(resnormed, 'norm')
+
+print "Probability of residuals being Gaussian: %.4f" % KSp
+print "Reduced Chi square: %.2f" %  np.mean(redchis_highsnr/np.power(rms_highsnr,2))
+
+##PLOT RESIDUALS
+
+subplotcount += 1
+
+plt.subplot(2,2,subplotcount)
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
+plt.plot(profilexaxis,resdata,'b',alpha = 0.25)
+plt.title('%s at %.1f MHz' %(pulsar, freqMHz_highsnr))
+plt.xlim(xmax=pulseperiod)
+plt.xticks(fontsize=12)
+plt.yticks(fontsize=12)
+plt.xlabel('time (s)')
+plt.ylabel('residuals',fontsize=14)
+
+##PLOT RESIDUALS HISTOGRAM
+
+subplotcount += 1
+
+plt.subplot(2,2,subplotcount)
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
+plt.hist(resdata,facecolor='b',bins=10)
+plt.title('%s at %.1f MHz' %(pulsar, freqMHz_highsnr))
+plt.xticks(fontsize=12)
+plt.yticks(fontsize=12)
+plt.xlabel('time (s)')
+plt.ylabel('counts',fontsize=14)
+
+
+###PLOT FLUX##
+#
+xaxis = np.linspace(1,npch,npch)
+#
+#plt.figure(numfig, figsize=(16,10))
+#plt.subplot(2,2,2)
+#plt.rc('text', usetex=True)
+#plt.rc('font', family='serif')
+#plt.plot(xaxis,fluxes_highsnr,markr, alpha = alfval)
+#plt.title('%s' %(pulsar))
+#plt.xticks(fontsize=12)
+#plt.yticks(fontsize=12)
+#plt.xlabel('Tsubs (count)',fontsize=16)
+#plt.ylabel(r'Calibrated flux (mJy)',fontsize=16)
+
 
 lmfittausstds = np.array(lmfittausstds)
 obtainedtaus = np.array(obtainedtaus)
@@ -314,133 +334,74 @@ taussec_highsnr = taus_highsnr*pulseperiod/nbins
 
 print9 = 'pulseperiod = %.6f' %pulseperiod
 for i in range(nsub):
-    print'%d Tau (ms): %.2f' %(i, 1000*taussec_highsnr[i])
+    print'Tau (ms): %.2f' %(1000*taussec_highsnr)
 
 print eval('print{0}'.format(9))
     
 ##PLOT TAU##  
-    
-if subpl_ind >= sp:
-    subpl_ind2 = int(subpl_ind-sp) +1
-else:
-    subpl_ind2 = int(subpl_ind) + 1
 
-if npch + 2 == sp:    
-    numfig2 = (npch+2)/sp
-else:
-    numfig2 = (npch+2)/sp + 1
-
-plt.figure(numfig2, figsize=(16,10))
-plt.subplot(3,4,subpl_ind2)
-#plt.errorbar(xaxis,taussec_highsnr,yerr=lmfitstds_highsnr*pulseperiod/nbins,fmt=markr,markersize=9.0,capthick=2,linewidth=1.5, alpha = alfval)
-plt.plot(xaxis,taussec_highsnr,markr,markersize=9.0,linewidth=1.5, alpha = alfval)
-#plt.plot(1000.*freqms_highsnr, powouttau_highsnr.best_fit, 'k-', alpha=alfval)
-plt.plot(xaxis,fluxes_highsnr,markr, alpha = alfval)
-plt.title('%s' %(pulsar))
-plt.xticks(fontsize=12)
-plt.yticks(fontsize=12)
-plt.xlabel('Tsubs (count)',fontsize=16)
-plt.ylabel(r'$\tau$ (sec)',fontsize=16)
+#plt.figure(numFig, figsize=(16,10))
+#plt.subplot(2,2,3)
+##plt.errorbar(xaxis,taussec_highsnr,yerr=lmfitstds_highsnr*pulseperiod/nbins,fmt=markr,markersize=9.0,capthick=2,linewidth=1.5, alpha = alfval)
+#plt.plot(xaxis,taussec_highsnr,markr,markersize=9.0,linewidth=1.5, alpha = alfval)
+##plt.plot(1000.*freqms_highsnr, powouttau_highsnr.best_fit, 'k-', alpha=alfval)
+#plt.plot(xaxis,fluxes_highsnr,markr, alpha = alfval)
+#plt.title('%s' %(pulsar))
+#plt.xticks(fontsize=12)
+#plt.yticks(fontsize=12)
+#plt.xlabel('Tsubs (count)',fontsize=16)
+#plt.ylabel(r'$\tau$ (sec)',fontsize=16)
 
 
 
 ### PLOT CHI ##  
 
-if subpl_ind2 >= sp:
-    subpl_ind3 = int(subpl_ind2-sp) +1
-else:
-    subpl_ind3 = int(subpl_ind2) + 1
-    
-if npch + 3 == sp:    
-    numfig3 = (npch+3)/sp
-else:
-    numfig3 = (npch+3)/sp + 1
-
-plt.figure(numfig3, figsize=(16,10))
-plt.subplot(3,4,subpl_ind3)
-plt.plot(xaxis, redchis_highsnr/np.power(rms_highsnr,2), markr,alpha=alfval,markersize = 12)
-plt.title(r'Reduced $\chi^2$ values')
-plt.yticks(fontsize=10)
-plt.xticks(fontsize=12)
-plt.xlabel('Tsubs (count)',fontsize=16)
-plt.ylabel(r'$\chi^2$',fontsize=16)
-
-"""Compute the KS Test D value and probability of the residuals following a normal distribution"""
-KSs = np.zeros((npch,2))
-ADs = np.zeros((npch,2))
-for i in range(npch):
-    resdata = data_highsnr[i] - model_highsnr[i]
-    resnormed = (resdata-resdata.mean())/resdata.std()
-    KSd, KSp = stats.kstest(resnormed, 'norm')
-    KSs[i,0] = KSd
-    KSs[i,1]= KSp
-    
-#    aa,bb,cc = stats.anderson(resnormed, 'norm')
-#    print aa,bb,cc
-
-resmeanP = np.mean(KSs[:,1])
-print "Mean probability of residuals being Gaussian: %.4f" % resmeanP
-
-print "Mean reduced Chi square: %.2f" %  np.mean(redchis_highsnr/np.power(rms_highsnr,2))
-
+#plt.figure(numFig, figsize=(16,10))
+#plt.subplot(2,2,4)
+#plt.plot(xaxis, redchis_highsnr/np.power(rms_highsnr,2), markr,alpha=alfval,markersize = 12)
+#plt.title(r'Reduced $\chi^2$ values')
+#plt.yticks(fontsize=10)
+#plt.xticks(fontsize=12)
+#plt.xlabel('Tsubs (count)',fontsize=16)
+#plt.ylabel(r'$\chi^2$',fontsize=16)
 
 
 
 ##PLOT SIGMA##  #
 
-if subpl_ind3 >= sp:
-    subpl_ind4 = int(subpl_ind3-sp)+1
-else:
-    subpl_ind4 = int(subpl_ind3)+1
-
-if npch + 4 == sp:    
-    numfig4 = (npch+4)/sp
-else:
-    numfig4 = (npch+4)/sp + 1
-
-
-figg = plt.figure(numfig4, figsize=(16,10))
-figg.subplots_adjust(left = 0.055, right = 0.98, wspace=0.35,hspace=0.35,bottom=0.05)    
-plt.subplot(3,4,subpl_ind4)
-plt.plot(xaxis,bestpT_highSNR[0]*pbs,'m*',markersize=9.0,linewidth=1.5,alpha=alfval)
-#plt.errorbar(xaxis,bestpT_highSNR[0]*pbs,yerr = bestpT_std_highSNR[0]*pbs, fmt = 'm*',markersize=9.0,capthick=2,linewidth=1.5,alpha=alfval)
-plt.ylabel(r'$\sigma$ (sec)')
-plt.yticks(fontsize=11)
-plt.xticks(fontsize=10)
-plt.xlabel('Tsubs (count)',fontsize=16)
-plt.legend(fontsize = 9, loc='best')
-
-
-## PLOT A ##
-
-if subpl_ind4 >= sp:
-    subpl_ind5 = int(subpl_ind4-sp)+1
-else:
-    subpl_ind5 = int(subpl_ind4)+1
-
-if npch + 5 == sp:    
-    numfig5 = (npch+5)/sp
-else:
-    numfig5 = (npch+5)/sp + 1
+#figg = plt.figure(numFig, figsize=(16,10))
+#figg.subplots_adjust(left = 0.055, right = 0.98, wspace=0.35,hspace=0.35,bottom=0.05)    
+#plt.subplot(2,2,4)
+#plt.plot(xaxis,bestpT_highSNR[0]*pbs,'m*',markersize=9.0,linewidth=1.5,alpha=alfval)
+##plt.errorbar(xaxis,bestpT_highSNR[0]*pbs,yerr = bestpT_std_highSNR[0]*pbs, fmt = 'm*',markersize=9.0,capthick=2,linewidth=1.5,alpha=alfval)
+#plt.ylabel(r'$\sigma$ (sec)')
+#plt.yticks(fontsize=11)
+#plt.xticks(fontsize=10)
+#plt.xlabel('Tsubs (count)',fontsize=16)
+#plt.legend(fontsize = 9, loc='best')
+#
+#
+### PLOT A ##
+#
+#plt.figure(numFig,figsize=(16,10))
+#plt.subplot(2,2,4)
+##plt.errorbar(xaxis, bestpT_highSNR[2], yerr = bestpT_std_highSNR[2], fmt = 'g*',markersize=9.0,capthick=2,linewidth=1.5, alpha=alfval)
+#plt.plot(xaxis, bestpT_highSNR[2],'g*',markersize=9.0,linewidth=1.5, alpha=alfval)
+#plt.title('Amplitude')
+#plt.annotate('%s' %pulsar,xy=(np.max(1000*freqms),np.max(obtainedtausec)),xycoords='data',xytext=(0.5,0.7),textcoords='axes fraction',fontsize=14)
+#plt.yticks(fontsize=12)
+#plt.xticks(fontsize=12)
+#plt.xlabel('Tsubs (count)',fontsize=16)
+#plt.ylabel(r'$A$',fontsize=16)
 
 
-plt.figure(numfig5,figsize=(16,10))
-plt.subplot(3,4,subpl_ind5)
-#plt.errorbar(xaxis, bestpT_highSNR[2], yerr = bestpT_std_highSNR[2], fmt = 'g*',markersize=9.0,capthick=2,linewidth=1.5, alpha=alfval)
-plt.plot(xaxis, bestpT_highSNR[2],'g*',markersize=9.0,linewidth=1.5, alpha=alfval)
-plt.title('Amplitude')
-plt.annotate('%s' %pulsar,xy=(np.max(1000*freqms),np.max(obtainedtausec)),xycoords='data',xytext=(0.5,0.7),textcoords='axes fraction',fontsize=14)
-plt.yticks(fontsize=12)
-plt.xticks(fontsize=12)
-plt.xlabel('Tsubs (count)',fontsize=16)
-plt.ylabel(r'$A$',fontsize=16)
+print 'Sigma: %.2e sec' % (bestpT_highSNR[0]*pbs)
+print 'Amp: %.2e ' % (bestpT_highSNR[2]*pbs)
 
 
-for i in range(numfig5):
-    k = numfig5 - i ##reverse the order
-    Summaryplot = '%s_%s_%s_%d.png'  % (pulsar,datac,meth,k)
-    picpathtau = newpath
-    fileoutputtau = os.path.join(picpathtau,Summaryplot)
-    plt.savefig(fileoutputtau, dpi=150)
-    print 'Saved %s in %s' %(Summaryplot,newpath)
-    plt.close()
+Summaryplot = '%s_%s.png'  % (filepath,meth)
+picpathtau = newpath
+fileoutputtau = os.path.join(picpathtau,Summaryplot)
+plt.savefig(fileoutputtau, dpi=150)
+print 'Saved %s in %s' %(Summaryplot,newpath)
+#plt.close()
