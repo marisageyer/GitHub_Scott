@@ -232,25 +232,13 @@ pbs = pulseperiod/nbins
     
 """Plotting starts"""
 
-if meth in 'onedim':
-    print "METH IS ONEDIM"
-    alfval = 0.6
-    alfval2 = 0.0
-    markr = 'k^'
-    prof = 'b--'
-    textpos = 0.7
-    textpos2 = 3
-if meth in 'iso':
-    print "METH IS ISO"
-    plt.close('all')
-    alfval = 1.0
-    alfval2 = 0.2
-    markr = 'k*'
-    prof = 'r-'
-    textpos = 0.8
-    textpos2 = 5
-else:
-    print "NO METH SPECIFIED"
+plt.close('all')
+alfval = 1.0
+alfval2 = 0.2
+markr = 'k*'
+prof = 'r-'
+textpos = 0.8
+textpos2 = 5
     
 ##PLOT PROFILES##
 
@@ -325,6 +313,8 @@ taussec_highsnr = taus_highsnr*pulseperiod/nbins
 
 
 print9 = 'pulseperiod = %.6f' %pulseperiod
+for i in range(nsub):
+    print'%d Tau (ms): %.2f' %(i, 1000*taussec_highsnr[i])
 
 print eval('print{0}'.format(9))
     
@@ -384,7 +374,6 @@ for i in range(npch):
     KSd, KSp = stats.kstest(resnormed, 'norm')
     KSs[i,0] = KSd
     KSs[i,1]= KSp
-    print KSd, KSp
     
 #    aa,bb,cc = stats.anderson(resnormed, 'norm')
 #    print aa,bb,cc
