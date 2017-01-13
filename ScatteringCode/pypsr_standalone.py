@@ -389,7 +389,7 @@ def GxETrainAniDCive(x,mu, sigma, A, tau1, tau2, dc, nbins):
 def smooth(y, box_pts):
     gauss = np.ones(box_pts)    
 #    box = np.ones(box_pts)/box_pts
-    sigma = (1./6.)*box_pts
+    sigma = (1./12.)*box_pts
     mean = box_pts/2.
     for i in range(box_pts):    
         gauss[i] = (1/(sigma*np.sqrt(2*np.pi)))*np.exp(-(i-mean)**2/(2*sigma**2))

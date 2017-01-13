@@ -436,7 +436,6 @@ plt.xlabel('Tsubs (count)',fontsize=16)
 plt.ylabel(r'$A$',fontsize=16)
 
 
-
 for i in range(numfig5):
     k = numfig5 - i ##reverse the order
     Summaryplot = '%s_%s_%s_%d.png'  % (pulsar,datac,meth,k)
