@@ -10,6 +10,7 @@
 #Standalone_Taufit_simu.py
 
 import argparse
+import re
 import os, sys
 import pypsr_standalone as psr
 import matplotlib.pyplot as plt
@@ -23,9 +24,6 @@ from scipy import stats
 import DataReadIn as dri
 
 from matplotlib import rc
-rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
-## for Palatino and other serif fonts use:
-#rc('font',**{'family':'serif','serif':['Palatino']})
 rc('text', usetex=True)
 
 #"""Read and print header information"""
@@ -33,10 +31,6 @@ rc('text', usetex=True)
 parser = argparse.ArgumentParser()
 parser.add_argument('-f','--filename',
                     help="Provide the pathway to the data files")
-parser.add_argument('-p','--period',type=float,
-                    help="Provide the period of the pulsar in seconds")
-parser.add_argument('-c','--counts',type=int,
-                    help="Provide the number of noise realisations (interger)")
 parser.add_argument('-m','--method',
                     help="Choosing method to fit data or simulation. Choose between 'onedim', 'iso', 'aniso','postfold', 'isoplusonedim'")                   
 parser.add_argument('-dc','--datacycle',
@@ -47,8 +41,6 @@ args = parser.parse_args()
 
 """Allocate variable names to the parsed options"""
 filepath = args.filename
-pulseperiod = args.period
-count = args.counts
 meth = args.method
 datac = args.datacycle
 
@@ -60,7 +52,7 @@ if not os.path.exists(newpath):
 
 print "\n Reading in data \n"
 pulsars = []
-pulsar, nch, nbins,nsub, lm_rms = dri.read_headerfull(filepath)
+pulsar, nch, nbins,nsub, lm_rms, tsub = dri.read_headerfull(filepath)
 pulsars = [pulsar for i in range(nsub)]
 print3 = "RMS: %f" %lm_rms
  
@@ -72,23 +64,7 @@ for k in range(4):
     print eval('print{0}'.format(k))
     
 
-#Find pulseperiod from list if it wasn't parsed
-
-pulsarBnamelist = ['B0037+56','B0114+58','B0540+23','B0611+22','B0740-28','B1848+12','B1907+10','B1911-04','B1915+13','B1920+21','B1933+16','B2255+58','B2303+30']
-pulsarnamelist = ['J0040+5716','J0117+5914','J0543+2329','J0614+2229', 'J0742-2822','J1851+1259','J1909+1102','J1913-0440','J1917+1353','J1922+2110','J1935+1616','J2257+5909','J2305+3100']
-pulsarperiodlist = [1.118225, 0.101439, 0.245975, 0.33496, 0.166762, 1.205303, 0.283641, 0.825936, 0.194631, 1.077924, 0.358738, 0.368246, 1.575886]
-
-
-if pulseperiod == None: 
-   	pulsarN = pulsar[0:8]
-   	print pulsarN
-   	pulseind = pulsarBnamelist.index(pulsarN)
-   	pulseperiod = pulsarperiodlist[pulseind]
-else:
-   pulseperiod = pulseperiod
-
-
-profilexaxis = np.linspace(0,pulseperiod,nbins)
+profilexaxis = np.linspace(0,tsub,nbins)
 
 #for i in range(15):
 #    plt.close(i)
@@ -225,14 +201,12 @@ npch = nsub
 
 print eval('print{0}'.format(6))
 
-"""Calculate fits for parameters sigma and mu"""
-"""Shift data based on mu-trend (DM trend?)"""
-
-pbs = pulseperiod/nbins
+tbs = tsub/nbins
     
 """Plotting starts"""
 
 plt.close('all')
+
 alfval = 1.0
 alfval2 = 0.2
 markr = 'k*'
@@ -253,13 +227,13 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 plt.plot(profilexaxis,data_highsnr,'y',alpha = 0.25)
 plt.plot(profilexaxis,model_highsnr,prof, alpha = 0.7)
-plt.title('%s at %.1f MHz' %(pulsar, freqMHz_highsnr))
-plt.annotate(r'$\tau: %.4f \pm %.2e$ ms' %(taus_highsnr*pulseperiod/nbins*1000, lmfitstds_highsnr*pulseperiod/nbins*1000),xy=(np.max(profilexaxis),np.max(data_highsnr)),xycoords='data',xytext=(0.4,textpos),textcoords='axes fraction',fontsize=14)
+plt.title('%s at %.1f MHz, Tsub: %.2f sec' %(pulsar, freqMHz_highsnr, tsub))
+plt.text(0.6*tsub,0.8*np.max(data_highsnr), r'$\tau: %.2f \pm %.2f$ ms' %(taus_highsnr*tbs*1000, lmfitstds_highsnr*tbs*1000),fontsize=14)
 plt.ylim(ymax=1.3*np.max(data_highsnr))
-plt.xlim(xmax=pulseperiod)
+plt.xlim(xmax=tsub)
 plt.xticks(fontsize=12)
 plt.yticks(fontsize=12)
-plt.xlabel('time (s)')
+plt.xlabel('time (s)',fontsize=14)
 plt.ylabel('normalized intensity',fontsize=14)
         
 
@@ -269,8 +243,8 @@ resdata = data_highsnr - model_highsnr
 resnormed = (resdata-resdata.mean())/resdata.std()
 KSd, KSp = stats.kstest(resnormed, 'norm')
 
-print "Probability of residuals being Gaussian: %.4f" % KSp
-print "Reduced Chi square: %.2f" %  np.mean(redchis_highsnr/np.power(rms_highsnr,2))
+#print "Probability of residuals being Gaussian: %.4f" % KSp
+#print "Reduced Chi square: %.2f" %  np.mean(redchis_highsnr/np.power(rms_highsnr,2))
 
 ##PLOT RESIDUALS
 
@@ -281,10 +255,10 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 plt.plot(profilexaxis,resdata,'b',alpha = 0.25)
 plt.title('%s at %.1f MHz' %(pulsar, freqMHz_highsnr))
-plt.xlim(xmax=pulseperiod)
+plt.xlim(xmax=tsub)
 plt.xticks(fontsize=12)
 plt.yticks(fontsize=12)
-plt.xlabel('time (s)')
+plt.xlabel('time (s)',fontsize=14)
 plt.ylabel('residuals',fontsize=14)
 
 ##PLOT RESIDUALS HISTOGRAM
@@ -298,7 +272,7 @@ plt.hist(resdata,facecolor='b',bins=10)
 plt.title('%s at %.1f MHz' %(pulsar, freqMHz_highsnr))
 plt.xticks(fontsize=12)
 plt.yticks(fontsize=12)
-plt.xlabel('time (s)')
+plt.xlabel('time (s)',fontsize=14)
 plt.ylabel('counts',fontsize=14)
 
 
@@ -322,27 +296,27 @@ lmfittausstds = np.array(lmfittausstds)
 obtainedtaus = np.array(obtainedtaus)
 
 
-obtainedtausec = obtainedtaus*pulseperiod/nbins
-lmfitstdssec_highsnr = lmfitstds_highsnr*pulseperiod/nbins
+obtainedtausec = obtainedtaus*tbs
+lmfitstdssec_highsnr = lmfitstds_highsnr*tbs
 
 freqms = np.array(freqmsMHz)/1000. #(Use this one to compare the alpha outcome of all the freq channels with only the high SNR/low tau error ones.)
 
 """The associated high SNR arrays are"""
 taus_highsnr = np.array(taus_highsnr)
-taussec_highsnr = taus_highsnr*pulseperiod/nbins
+taussec_highsnr = taus_highsnr*tbs
 
 
-print9 = 'pulseperiod = %.6f' %pulseperiod
 for i in range(nsub):
     print'Tau (ms): %.2f' %(1000*taussec_highsnr)
 
+print9 = 'Tsub = %.2f sec' %tsub
 print eval('print{0}'.format(9))
     
 ##PLOT TAU##  
 
 #plt.figure(numFig, figsize=(16,10))
 #plt.subplot(2,2,3)
-##plt.errorbar(xaxis,taussec_highsnr,yerr=lmfitstds_highsnr*pulseperiod/nbins,fmt=markr,markersize=9.0,capthick=2,linewidth=1.5, alpha = alfval)
+##plt.errorbar(xaxis,taussec_highsnr,yerr=lmfitstds_highsnr*tbs,fmt=markr,markersize=9.0,capthick=2,linewidth=1.5, alpha = alfval)
 #plt.plot(xaxis,taussec_highsnr,markr,markersize=9.0,linewidth=1.5, alpha = alfval)
 ##plt.plot(1000.*freqms_highsnr, powouttau_highsnr.best_fit, 'k-', alpha=alfval)
 #plt.plot(xaxis,fluxes_highsnr,markr, alpha = alfval)
@@ -372,8 +346,8 @@ print eval('print{0}'.format(9))
 #figg = plt.figure(numFig, figsize=(16,10))
 #figg.subplots_adjust(left = 0.055, right = 0.98, wspace=0.35,hspace=0.35,bottom=0.05)    
 #plt.subplot(2,2,4)
-#plt.plot(xaxis,bestpT_highSNR[0]*pbs,'m*',markersize=9.0,linewidth=1.5,alpha=alfval)
-##plt.errorbar(xaxis,bestpT_highSNR[0]*pbs,yerr = bestpT_std_highSNR[0]*pbs, fmt = 'm*',markersize=9.0,capthick=2,linewidth=1.5,alpha=alfval)
+#plt.plot(xaxis,bestpT_highSNR[0]*tbs,'m*',markersize=9.0,linewidth=1.5,alpha=alfval)
+##plt.errorbar(xaxis,bestpT_highSNR[0]*tbs,yerr = bestpT_std_highSNR[0]*tbs, fmt = 'm*',markersize=9.0,capthick=2,linewidth=1.5,alpha=alfval)
 #plt.ylabel(r'$\sigma$ (sec)')
 #plt.yticks(fontsize=11)
 #plt.xticks(fontsize=10)
@@ -395,11 +369,13 @@ print eval('print{0}'.format(9))
 #plt.ylabel(r'$A$',fontsize=16)
 
 
-print 'Sigma: %.2e sec' % (bestpT_highSNR[0]*pbs)
-print 'Amp: %.2e ' % (bestpT_highSNR[2]*pbs)
+print 'Sigma: %.2f ms' % (bestpT_highSNR[0]*tbs*1000)
+print 'Amp: %.2f ' % (bestpT_highSNR[2])
 
+savename = re.split("Beam2_",filepath)[-1]
+savename = savename[0:-9]
 
-Summaryplot = '%s_%s.png'  % (filepath,meth)
+Summaryplot = '%s_%s.png'  % (savename,meth)
 picpathtau = newpath
 fileoutputtau = os.path.join(picpathtau,Summaryplot)
 plt.savefig(fileoutputtau, dpi=150)

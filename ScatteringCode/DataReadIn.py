@@ -31,6 +31,7 @@ def read_headerfull(filepath):
     f = open(filepath)
     lines = f.readlines()
     header0 = lines[0]
+    header1 = lines[1]
     h0_lines = header0.split()
     if h0_lines[0] == '#':
         h0_lines = h0_lines[1:len(h0_lines)]
@@ -43,8 +44,10 @@ def read_headerfull(filepath):
     npol = int(h0_lines[9])
     nbins = int(h0_lines[11])
     rms = float(h0_lines[13])
+    h1_lines = header1.split()
+    tsub = float(h1_lines[4])  
 #    return file_name, pulsar_name, nsub, nch, npol, nbins, rms
-    return pulsar_name, nch, nbins, nsub, rms
+    return pulsar_name, nch, nbins, nsub, rms, tsub
 
 
     
