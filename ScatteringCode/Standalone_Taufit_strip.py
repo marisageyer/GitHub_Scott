@@ -357,16 +357,16 @@ print eval('print{0}'.format(9))
 #
 ### PLOT A ##
 #
-#plt.figure(numFig,figsize=(16,10))
-#plt.subplot(2,2,4)
-##plt.errorbar(xaxis, bestpT_highSNR[2], yerr = bestpT_std_highSNR[2], fmt = 'g*',markersize=9.0,capthick=2,linewidth=1.5, alpha=alfval)
-#plt.plot(xaxis, bestpT_highSNR[2],'g*',markersize=9.0,linewidth=1.5, alpha=alfval)
-#plt.title('Amplitude')
-#plt.annotate('%s' %pulsar,xy=(np.max(1000*freqms),np.max(obtainedtausec)),xycoords='data',xytext=(0.5,0.7),textcoords='axes fraction',fontsize=14)
-#plt.yticks(fontsize=12)
-#plt.xticks(fontsize=12)
-#plt.xlabel('Tsubs (count)',fontsize=16)
-#plt.ylabel(r'$A$',fontsize=16)
+plt.figure(numFig,figsize=(16,10))
+plt.subplot(2,2,4)
+#plt.errorbar(xaxis, bestpT_highSNR[2], yerr = bestpT_std_highSNR[2], fmt = 'g*',markersize=9.0,capthick=2,linewidth=1.5, alpha=alfval)
+plt.plot(xaxis, bestpT_highSNR[2],'g*',markersize=9.0,linewidth=1.5, alpha=alfval)
+plt.title('Amplitude')
+plt.annotate('%s' %pulsar,xy=(np.max(1000*freqms),np.max(obtainedtausec)),xycoords='data',xytext=(0.5,0.7),textcoords='axes fraction',fontsize=14)
+plt.yticks(fontsize=12)
+plt.xticks(fontsize=12)
+plt.xlabel('Tsubs (count)',fontsize=16)
+plt.ylabel(r'$A$',fontsize=16)
 
 
 print 'Sigma: %.2f ms' % (bestpT_highSNR[0]*tbs*1000)
