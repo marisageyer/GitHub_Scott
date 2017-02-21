@@ -422,9 +422,8 @@ for i in range(numplots):
     plt.yticks(fontsize=12)
     plt.xlabel('time (s)',fontsize=14)
     plt.ylabel('counts',fontsize=14)
+    plt.show()
 
-
-###PLOT FLUX##
 
 lmfittausstds = np.array(lmfittausstds)
 obtainedtaus = np.array(obtainedtaus)
